@@ -1,69 +1,81 @@
 'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Correct import for App Router
-
-export default function Home() {
+const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [result, setResult] = useState('');
-  const router = useRouter(); // Initialize router
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('https://shoppica-backend.onrender.com/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // this is REQUIRED to handle sessions
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
-      const contentType = response.headers.get('content-type');
-
       if (!response.ok) {
-        const errorData = contentType?.includes('application/json')
-          ? await response.json()
-          : { error: 'Login failed' };
-        throw new Error(errorData.error || `Status ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
 
-      const data = await response.json();
-      setResult(`✅ Login successful:\n${JSON.stringify(data, null, 2)}`);
-
-      // Redirect to the dashboard page after successful login
-      router.push('/products'); // Change '/dashboard' to your desired destination
-
-    } catch (error: any) {
-      setResult(`❌ Login error: ${error.message}`);
+      router.push('/products');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <main>
+    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+      <h1>Login</h1>
       <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <br />
-        <button type="submit">Login</button>
+        <div style={{ marginBottom: '15px' }}>
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '8px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: loading ? '#ccc' : '#007bff',
+            color: '#fff',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
-      <pre>{result}</pre>
-    </main>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
   );
-}
+};
+
+export default LoginPage;

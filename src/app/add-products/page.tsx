@@ -1,171 +1,270 @@
-// pages/dashboard.tsx (assuming this is now your product add page,
-// or that the dashboard page also includes the add product functionality)
-
 'use client';
-
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Crucial for App Router
+import { useRouter } from 'next/navigation';
 
-export default function DashboardPage() {
-  const router = useRouter();
+interface ApiError {
+  message?: string;
+  error?: string;
+}
 
-  // State for product inputs
+
+const AddProductPage = () => {
+  const route = useRouter();
   const [name, setName] = useState<string>('');
-  const [price, setPrice] = useState<string>(''); // Keep as string for input, convert before API
-  const [purchasePrice, setPurchasePrice] = useState<string>('');
-  const [stock, setStock] = useState<string>('');
-  const [result, setResult] = useState<string>(''); // For displaying success/error messages
-
-  const handleGoToProducts = () => {
-    router.push('/products'); // Redirects to the products page
-  };
-
-  const handleGoHome = () => {
-    router.push('/'); // Redirects to the home page
-  };
+  const [price, setPrice] = useState<string>('');
+  const [purchase_price, setPurchase_price] = useState<string>('');
+  const [stock_quantity, setStock_quantity] = useState<string>('');
+  const [category_id, setCategory_id] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [image, setImage] = useState<File | null>(null);
+  const [is_active, setIs_active] = useState<boolean>(true);
+  const [result, setResult] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Always prevent default form submission
+    e.preventDefault();
+    setResult('');
+    setIsLoading(true);
 
-    setResult(''); // Clear previous results
-
-    // Basic validation (optional but recommended)
-    if (!name || !price || !purchasePrice || !stock) {
-      setResult('❌ All fields are required.');
+    // Validate inputs
+    if (!name || !price || !purchase_price || !stock_quantity || !category_id || !description || !image) {
+      setResult('❌ All required fields (name, price, purchase price, stock quantity, category ID, description, image) must be provided.');
+      setIsLoading(false);
       return;
     }
 
-    // Convert string inputs to numbers for the API
     const parsedPrice = parseFloat(price);
-    const parsedPurchasePrice = parseFloat(purchasePrice);
-    const parsedStock = parseInt(stock, 10);
+    const parsedPurchasePrice = parseFloat(purchase_price);
+    const parsedStock = parseInt(stock_quantity, 10);
+    const parsedCategoryId = parseInt(category_id, 10);
 
-    // More robust validation for numbers
-    if (isNaN(parsedPrice) || isNaN(parsedPurchasePrice) || isNaN(parsedStock)) {
-        setResult('❌ Price, Purchase Price, and Stock must be valid numbers.');
-        return;
+    if (isNaN(parsedPrice) || isNaN(parsedPurchasePrice) || isNaN(parsedStock) || isNaN(parsedCategoryId)) {
+      setResult('❌ Price, Purchase Price, Stock Quantity, and Category ID must be valid numbers.');
+      setIsLoading(false);
+      return;
     }
 
+    if (parsedPrice <= 0 || parsedPurchasePrice <= 0 || parsedStock < 0 || parsedCategoryId <= 0) {
+      setResult('❌ Price, Purchase Price, Stock Quantity, and Category ID must be positive.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (name.length < 3) {
+      setResult('❌ Product name must be at least 3 characters long.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (description.length < 10) {
+      setResult('❌ Description must be at least 10 characters long.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Prepare FormData
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', parsedPrice.toFixed(2));
+    formData.append('purchase_price', parsedPurchasePrice.toFixed(2));
+    formData.append('stock_quantity', parsedStock.toString());
+    formData.append('category_id', parsedCategoryId.toString());
+    formData.append('description', description);
+    formData.append('image', image);
+    formData.append('is_active', is_active ? '1' : '0');
+
+    console.log('FormData payload:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch('https://shoppica-backend.onrender.com/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // this is REQUIRED to handle sessions
-        body: JSON.stringify({
-          name,
-          price: parsedPrice, // Send as number
-          purchasePrice: parsedPurchasePrice, // Send as number
-          stock: parsedStock, // Send as number
-        }),
+        credentials: 'include', // Send session cookies
+        signal: controller.signal,
+        body: formData,
       });
 
-      const contentType = response.headers.get('content-type');
+      clearTimeout(timeoutId);
 
+      const contentType = response.headers.get('content-type');
       if (!response.ok) {
-        const errorData = contentType?.includes('application/json')
-          ? await response.json()
-          : { error: 'Adding product failed' }; // Updated message
-        throw new Error(errorData.error || `Status ${response.status}`);
+        let errorData: ApiError = { error: 'Adding product failed' };
+        if (contentType?.includes('application/json')) {
+          errorData = await response.json();
+          console.log('Error response from API:', errorData);
+        }
+        const errorMessages: Record<number, string> = {
+          401: 'Unauthorized: Please log in again.',
+          400: 'Bad request: Invalid input data.',
+          500: 'Server error. Please try again later.',
+        };
+        throw new Error(errorData.message || errorData.error || errorMessages[response.status] || `HTTP error! Status: ${response.status}`);
+      }
+
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Unexpected response format. Expected application/json.');
       }
 
       const data = await response.json();
-      setResult(`✅ Product added successfully:\n${JSON.stringify(data, null, 2)}`); // Updated message
-
-      // Optional: Clear form fields after successful submission
+      setResult(`✅ Product "${data.name}" added successfully with ID: ${data.id}`);
       setName('');
       setPrice('');
-      setPurchasePrice('');
-      setStock('');
+      setPurchase_price('');
+      setStock_quantity('');
+      setCategory_id('');
+      setDescription('');
+      setImage(null);
+      setIs_active(true);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setResult(`❌ Add product error: ${errorMessage}`);
+      console.error('Product add error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Optional: Redirect to products page after successful addition
-      router.push('/products');
-
-
-    } catch (error: any) {
-      setResult(`❌ Add product error: ${error.message}`); // Updated message
-      console.error("Product add error:", error);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
     }
   };
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px', maxWidth: '600px', margin: '50px auto', border: '1px solid #eee', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-      <h1 style={{ textAlign: 'center', color: '#333' }}>Add New Product</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}> {/* Wrap inputs in a form */}
-        <input
-          type="text"
-          placeholder="Product Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="number" // Use type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="number" // Use type="number"
-          placeholder="Purchase Price"
-          value={purchasePrice}
-          onChange={(e) => setPurchasePrice(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="number" // Use type="number"
-          placeholder="Stock"
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <button type='submit' style={buttonStyle}>Add Product</button> {/* Use type="submit" */}
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+      <h1 style={{ textAlign: 'center', color: '#333', marginBottom: '30px' }}>Add Product</h1>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Product Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Product Name"
+            required
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Price</label>
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Price"
+            step="0.01"
+            required
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Purchase Price</label>
+          <input
+            type="number"
+            value={purchase_price}
+            onChange={(e) => setPurchase_price(e.target.value)}
+            placeholder="Purchase Price"
+            step="0.01"
+            required
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Stock Quantity</label>
+          <input
+            type="number"
+            value={stock_quantity}
+            onChange={(e) => setStock_quantity(e.target.value)}
+            placeholder="Stock Quantity"
+            required
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Category ID</label>
+          <input
+            type="number"
+            value={category_id}
+            onChange={(e) => setCategory_id(e.target.value)}
+            placeholder="Category ID"
+            required
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
+            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '100px' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>Product Image</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            style={{ width: '100%', padding: '8px' }}
+          />
+        </div>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px' }}>
+            <input
+              type="checkbox"
+              checked={is_active}
+              onChange={(e) => setIs_active(e.target.checked)}
+            />
+            Is Active
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading}
+          style={{
+            display: 'block',
+            margin: '20px auto',
+            padding: '10px 20px',
+            backgroundColor: isLoading ? '#ccc' : '#007bff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {isLoading ? 'Submitting...' : 'Add Product'}
+        </button>
+        <button
+          disabled={isLoading}
+          style={{
+            display: 'block',
+            margin: '20px auto',
+            padding: '10px 20px',
+            backgroundColor: isLoading ? '#ccc' : '#007bff',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+          }}
+          onClick={() => route.push('/products')}
+        >
+          {isLoading ? 'Submitting...' : 'see products'}
+        </button>
       </form>
-
-      {result && ( // Display the result message
-        <pre style={{
-          marginTop: '20px',
-          padding: '10px',
-          backgroundColor: result.startsWith('✅') ? '#e6ffe6' : '#ffe6e6',
-          border: `1px solid ${result.startsWith('✅') ? '#66cc66' : '#ff6666'}`,
-          borderRadius: '4px',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all'
-        }}>
+      {result && (
+        <p style={{ textAlign: 'center', color: result.startsWith('✅') ? 'green' : 'red' }}>
           {result}
-        </pre>
+        </p>
       )}
-
-      <div style={{ textAlign: 'center', marginTop: '30px', display: 'flex', justifyContent: 'space-around' }}>
-        <button onClick={handleGoHome} style={{...buttonStyle, backgroundColor: '#6c757d'}}>Go to Home</button>
-        <button onClick={handleGoToProducts} style={{...buttonStyle, backgroundColor: '#28a745'}}>Go to Products List</button>
-      </div>
     </div>
   );
-}
-
-// Simple inline styles for better presentation
-const inputStyle: React.CSSProperties = {
-  padding: '10px',
-  border: '1px solid #ddd',
-  borderRadius: '4px',
-  fontSize: '16px',
 };
 
-const buttonStyle: React.CSSProperties = {
-  padding: '10px 15px',
-  backgroundColor: '#007bff',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  fontSize: '16px',
-  transition: 'background-color 0.2s ease',
-};
+export default AddProductPage;
