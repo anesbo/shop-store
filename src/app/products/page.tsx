@@ -39,7 +39,7 @@ const ProductsPage = () => {
     setError(null);
 
     try {
-      const response = await fetch('https://shoppica-backend.onrender.com/api/products', {
+      const response = await fetch(`https://shoppica-backend.onrender.com/api/products`, {
         method: 'GET',
         credentials: 'include', // Send session cookies
       });
@@ -87,8 +87,8 @@ const ProductsPage = () => {
   }, []);
 
   const handleGoAddProduct = () => {
-    console.log('Navigating to /add-products');
-    router.push('/add-products');
+    console.log('Navigating to /admin');
+    router.push('/admin');
   };
 
   const handleViewProduct = (productId: number) => {
@@ -196,7 +196,7 @@ const ProductsPage = () => {
           cursor: loading ? 'not-allowed' : 'pointer',
         }}
       >
-        Go to Add Product
+        Go to admin page
       </button>
     </div>
   );

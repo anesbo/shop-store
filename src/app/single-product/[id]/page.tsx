@@ -92,8 +92,8 @@ const SingleProductPage = () => {
   };
 
   const handleGoAddProduct = () => {
-    console.log('Navigating to /add-products');
-    router.push('/add-products');
+    console.log('Navigating to /admin');
+    router.push('/admin');
   };
 
   console.log('Rendering with state:', { loading, error, product });

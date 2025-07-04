@@ -1,15 +1,16 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { checkAdminStatus } from '../utils/auth';
+import LogoutButton from '../components/LogoutButton';
 
 interface ApiError {
   message?: string;
   error?: string;
 }
 
-
-const AddProductPage = () => {
-  const route = useRouter();
+const AdminPage = () => {
+  const router = useRouter();
   const [name, setName] = useState<string>('');
   const [price, setPrice] = useState<string>('');
   const [purchase_price, setPurchase_price] = useState<string>('');
@@ -20,13 +21,28 @@ const AddProductPage = () => {
   const [is_active, setIs_active] = useState<boolean>(true);
   const [result, setResult] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      console.log('Verifying admin access');
+      const { isAdmin, message } = await checkAdminStatus();
+      if (!isAdmin) {
+        console.log('Non-admin user, redirecting to /login:', message);
+        router.push('/login');
+      } else {
+        console.log('Admin access granted');
+        setAuthChecked(true);
+      }
+    };
+    verifyAdmin();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResult('');
     setIsLoading(true);
 
-    // Validate inputs
     if (!name || !price || !purchase_price || !stock_quantity || !category_id || !description || !image) {
       setResult('❌ All required fields (name, price, purchase price, stock quantity, category ID, description, image) must be provided.');
       setIsLoading(false);
@@ -62,7 +78,6 @@ const AddProductPage = () => {
       return;
     }
 
-    // Prepare FormData
     const formData = new FormData();
     formData.append('name', name);
     formData.append('price', parsedPrice.toFixed(2));
@@ -84,7 +99,7 @@ const AddProductPage = () => {
 
       const response = await fetch('https://shoppica-backend.onrender.com/api/products', {
         method: 'POST',
-        credentials: 'include', // Send session cookies
+        credentials: 'include',
         signal: controller.signal,
         body: formData,
       });
@@ -136,9 +151,14 @@ const AddProductPage = () => {
     }
   };
 
+  if (!authChecked) {
+    return <div style={{ textAlign: 'center', padding: '20px' }}>Checking admin access...</div>;
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#333', marginBottom: '30px' }}>Add Product</h1>
+      <LogoutButton/>
+      <h1 style={{ textAlign: 'center', color: '#333', marginBottom: '30px' }}>Admin: Add Product</h1>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
           <label style={{ display: 'block', marginBottom: '5px' }}>Product Name</label>
@@ -203,6 +223,7 @@ const AddProductPage = () => {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description"
+            required
             style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '100px' }}
           />
         </div>
@@ -212,6 +233,7 @@ const AddProductPage = () => {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
+            required
             style={{ width: '100%', padding: '8px' }}
           />
         </div>
@@ -241,22 +263,6 @@ const AddProductPage = () => {
         >
           {isLoading ? 'Submitting...' : 'Add Product'}
         </button>
-        <button
-          disabled={isLoading}
-          style={{
-            display: 'block',
-            margin: '20px auto',
-            padding: '10px 20px',
-            backgroundColor: isLoading ? '#ccc' : '#007bff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-          }}
-          onClick={() => route.push('/products')}
-        >
-          {isLoading ? 'Submitting...' : 'see products'}
-        </button>
       </form>
       {result && (
         <p style={{ textAlign: 'center', color: result.startsWith('✅') ? 'green' : 'red' }}>
@@ -267,4 +273,4 @@ const AddProductPage = () => {
   );
 };
 
-export default AddProductPage;
+export default AdminPage;

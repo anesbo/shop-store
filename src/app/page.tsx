@@ -1,81 +1,36 @@
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+// app/page.tsx
+'use client'; // This directive marks this file as a Client Component
 
-const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+import { useEffect, type ReactElement } from 'react';
+import { useRouter } from 'next/navigation'; // Use next/navigation for App Router
+
+/**
+ * Home component that redirects to a specific page on mount.
+ * This acts as the default entry point for the root URL ('/').
+ *
+ * @returns {ReactElement} A simple message indicating redirection.
+ */
+const Home = (): ReactElement => { // Removed NextPage type as it's for Pages Router
+  // Initialize the Next.js router for programmatic navigation.
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('https://shoppica-backend.onrender.com/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      router.push('/products');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // useEffect hook to perform the redirect after the component mounts.
+  // The empty dependency array `[]` ensures this effect runs only once,
+  // similar to componentDidMount in class components.
+  useEffect(() => {
+    // Perform the client-side redirect.
+    // Replace '/my-folder/my-page' with the actual path to your desired page.
+    // For example, if your page is at `app/dashboard/main/page.tsx`, the path would be '/dashboard/main'.
+    router.push('/products'); // <--- IMPORTANT: Change this path to your actual page!
+  }, []);
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc' }}
-          />
-        </div>
-        <div style={{ marginBottom: '15px' }}>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc' }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: loading ? '#ccc' : '#007bff',
-            color: '#fff',
-            border: 'none',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      {/* Optional: A message to display during the brief redirect.
+          This will be visible for a very short period before the navigation occurs. */}
+      <p className="text-lg text-gray-700 font-inter">Redirecting to your main page...</p>
     </div>
   );
 };
 
-export default LoginPage;
+export default Home;
