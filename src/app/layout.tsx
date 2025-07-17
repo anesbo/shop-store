@@ -1,10 +1,15 @@
-// app/layout.tsx
+// src/app/layout.tsx
+
 export const metadata = {
-  title: 'My App',
-  description: 'Blank Next.js Starter',
+  title: 'Shoppica Admin Dashboard',
+  description: 'Admin interface for Shoppica e-commerce platform',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>{children}</body>
