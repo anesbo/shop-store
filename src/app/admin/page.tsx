@@ -341,7 +341,7 @@ const AdminPage = () => {
   return (
     <div style={styles.container}>
       
-      <h1 style={styles.heading}>Admin Dashboard</h1>
+      <h1 style={styles.heading}>Admin Dashboard :)</h1>
       <button onClick={handleLogout} style={styles.primaryButton} disabled={loading}>
         {loading ? 'Logging out...' : 'Logout'}
         </button>
