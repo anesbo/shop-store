@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import EditProductModal from '../components/EditProductModal';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 // --- Interfaces ---
 interface Product {
@@ -864,7 +865,7 @@ fetchProducts();
             {addImagePreviews.length > 0 && (
               <div style={styles.imagePreviewsContainer}>
                 {addImagePreviews.map((src, index) => (
-                  <img key={index} src={src} alt={`Add Preview ${index + 1}`} style={styles.imagePreview} />
+                  <Image key={index} src={src} alt={`Add Preview ${index + 1}`} style={styles.imagePreview} />
                 ))}
               </div>
             )}
@@ -917,7 +918,7 @@ fetchProducts();
                       {product.images && product.images.length > 0 ? (
                         <div style={styles.imageGrid}>
                           {product.images.map((img, idx) => (
-                            <img
+                            <Image
                               key={idx}
                               src={`${staticBaseUrl}${img.image_url}`}
                               alt={`${product.name} ${idx + 1}`}
@@ -950,7 +951,7 @@ fetchProducts();
       </div>
       {showImageModal && (
         <div style={styles.modal}>
-          <img src={selectedImage} alt="Product" style={styles.modalImage} />
+          <Image src={selectedImage} alt="Product" style={styles.modalImage} />
           <button
             onClick={() => {
               setShowImageModal(false);

@@ -1,7 +1,7 @@
 // src/app/api/auth/logout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   const apiBaseUrl = process.env.API_BASE_URL;
 
   if (!apiBaseUrl) {

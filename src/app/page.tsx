@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 // Category Interface
 type Category = {
@@ -337,13 +338,10 @@ export default function Home() {
             >
               <h3 style={styles.productName}>{product.name}</h3>
               {product.images && product.images.length > 0 && product.images[0].image_url ? (
-                <img
+                <Image
                   src={`${staticBaseUrl}${product.images[0].image_url}`}
                   alt={`${product.name} image`}
                   style={styles.productImage}
-                  onError={(e) => {
-                    console.error(`Failed to load image: ${staticBaseUrl}${product.images[0].image_url}`);
-                  }}
                 />
               ) : (
                 <p><i>No image available</i></p>

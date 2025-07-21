@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 
 // --- Interfaces for Product ---
 interface Product {
@@ -245,13 +246,10 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
               <div style={modalStyles.imagePreviewsContainer}>
                 {editImagePreviews.map((src, index) => (
                   <div key={index} style={modalStyles.imagePreviewWrapper}>
-                    <img
+                    <Image
                       src={src}
                       alt={`Preview ${index + 1}`}
                       style={modalStyles.imagePreview}
-                      onError={(e) => {
-                        console.error(`Failed to load preview image: ${src}`);
-                      }}
                     />
                     {src.startsWith(staticBaseUrl) && (
                       <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 
 // Product Interface
 interface Product {
@@ -68,7 +69,7 @@ export default function SingleProductPage() {
     if (id) {
       fetchProduct();
     }
-  }, [id]);
+  }, [id, apiBaseUrl]);
 
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -195,15 +196,12 @@ export default function SingleProductPage() {
           {product.images && product.images.length > 0 ? (
             <div style={styles.imageGrid}>
               {product.images.map((img, idx) => (
-                <img
+                <Image
                   key={idx}
                   src={`${staticBaseUrl}${img.image_url}`}
                   onClick={()=>{handleImageClick(`${staticBaseUrl}${product.images[idx].image_url}`)}}
                   alt={`${product.name} image ${idx + 1}`}
                   style={styles.productImage}
-                  onError={(e) => {
-                    console.error(`Failed to load image: ${staticBaseUrl}${img.image_url}`);
-                  }}
                 />
               ))}
             </div>
@@ -217,7 +215,7 @@ export default function SingleProductPage() {
       )}
       {showImageModal && (
         <div style={styles.modal}>
-          <img src={selectedImage} alt="Product" style={styles.modalImage} />
+          <Image src={selectedImage} alt="Product" style={styles.modalImage} />
           <button
             onClick={() => {
               setShowImageModal(false);

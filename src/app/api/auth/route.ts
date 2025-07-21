@@ -21,9 +21,6 @@ export async function POST(req: NextRequest) {
     // --- DEBUGGING LOG: Inspect backend response headers ---
     console.log('Backend Response Status:', backendResponse.status);
     console.log('Backend Response Headers (from shoppica-backend):');
-    for (const [key, value] of backendResponse.headers.entries()) {
-      console.log(`  ${key}: ${value}`);
-    }
     // --- END DEBUGGING LOG ---
 
     if (!backendResponse.ok) {
