@@ -28,9 +28,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
   // --- Form States for Editing Product ---
   const [editName, setEditName] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
-  const [editPurchasePrice, setEditPurchasePrice] = useState<string>('');
   const [editStockQuantity, setEditStockQuantity] = useState<string>('');
-  const [editLowStockThreshold, setEditLowStockThreshold] = useState<string>('');
   const [editDescription, setEditDescription] = useState<string>('');
   const [editCategoryId, setEditCategoryId] = useState<string>('');
   const [editIsActive, setEditIsActive] = useState<string>('');
@@ -42,16 +40,14 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  const staticBaseUrl = `${apiBaseUrl}/static`; // For image URLs
+  const staticBaseUrl = `https://shoppica-backend.onrender.com`; // For image URLs
 
   // --- Populate form fields when product prop changes ---
   useEffect(() => {
     if (product) {
       setEditName(product.name);
       setEditPrice(String(product.price));
-      setEditPurchasePrice(String(product.purchase_price));
       setEditStockQuantity(String(product.stock_quantity));
-      setEditLowStockThreshold(String(product.low_stock_threshold));
       setEditDescription(product.description);
       setEditCategoryId(product.category_id !== null ? String(product.category_id) : '');
       setEditIsActive(String(product.is_active));
@@ -85,6 +81,44 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
     setEditImagePreviews(prev => [...prev.filter(p => !p.startsWith('blob:')), ...newPreviews]);
   };
 
+  // --- Delete Image Handler ---
+  const handleDeleteImage = async (imageUrl: string, index: number) => {
+    if (!product || !imageUrl.startsWith(staticBaseUrl)) return; // Only delete backend images
+
+    const imageId = product.images.find(img => `${staticBaseUrl}${img.image_url}` === imageUrl)?.id;
+    if (!imageId) {
+      showTemporaryMessage('Cannot delete image: Invalid image ID', 'error');
+      return;
+    }
+
+    setLoading(true);
+    clearMessages();
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/products/images/${imageId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to delete image: ${response.status}`);
+      }
+
+      // Update previews and product images
+      setEditImagePreviews(prev => prev.filter((_, i) => i !== index));
+      if (product) {
+        product.images = product.images.filter(img => img.id !== imageId);
+      }
+      showTemporaryMessage('Image deleted successfully!', 'success');
+    } catch (err: unknown) {
+      showTemporaryMessage('Error deleting image: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- Edit Product Submission ---
   const handleEditProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,22 +129,18 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
 
     // Validation
     const parsedPrice = parseFloat(editPrice);
-    const parsedPurchasePrice = parseFloat(editPurchasePrice);
     const parsedStockQuantity = parseInt(editStockQuantity);
-    const parsedLowStockThreshold = parseInt(editLowStockThreshold);
     const parsedCategoryId = editCategoryId ? parseInt(editCategoryId) : null;
     const parsedIsActive = parseInt(editIsActive);
 
     if (
       !editName ||
       isNaN(parsedPrice) || parsedPrice < 0 ||
-      isNaN(parsedPurchasePrice) || parsedPurchasePrice < 0 ||
       isNaN(parsedStockQuantity) || parsedStockQuantity < 0 ||
-      isNaN(parsedLowStockThreshold) || parsedLowStockThreshold < 0 ||
       !editDescription ||
       ![0, 1].includes(parsedIsActive)
     ) {
-      showTemporaryMessage('All fields (Name, Price, Purchase Price, Stock, Low Stock Threshold, Description, Is Active) are required and must be valid numbers.', 'error');
+      showTemporaryMessage('All fields (Name, Price, Stock, Description, Is Active) are required and must be valid.', 'error');
       setLoading(false);
       return;
     }
@@ -123,9 +153,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
     const formData = new FormData();
     formData.append('name', editName);
     formData.append('price', String(parsedPrice));
-    formData.append('purchase_price', String(parsedPurchasePrice));
     formData.append('stock_quantity', String(parsedStockQuantity));
-    formData.append('low_stock_threshold', String(parsedLowStockThreshold));
     formData.append('description', editDescription);
     if (parsedCategoryId !== null) formData.append('category_id', String(parsedCategoryId));
     formData.append('is_active', String(parsedIsActive));
@@ -192,20 +220,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
             <input type="number" id="editPrice" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} required min="0" step="0.01" style={modalStyles.input} disabled={loading} />
           </div>
           <div style={modalStyles.formGroup}>
-            <label htmlFor="editPurchasePrice" style={modalStyles.label}>Purchase Price:</label>
-            <input type="number" id="editPurchasePrice" value={editPurchasePrice} onChange={(e) => setEditPurchasePrice(e.target.value)} required min="0" step="0.01" style={modalStyles.input} disabled={loading} />
-          </div>
-          <div style={modalStyles.formGroup}>
             <label htmlFor="editStockQuantity" style={modalStyles.label}>Stock Quantity:</label>
             <input type="number" id="editStockQuantity" value={editStockQuantity} onChange={(e) => setEditStockQuantity(e.target.value)} required min="0" step="1" style={modalStyles.input} disabled={loading} />
           </div>
           <div style={modalStyles.formGroup}>
-            <label htmlFor="editLowStockThreshold" style={modalStyles.label}>Low Stock Threshold:</label>
-            <input type="number" id="editLowStockThreshold" value={editLowStockThreshold} onChange={(e) => setEditLowStockThreshold(e.target.value)} required min="0" step="1" style={modalStyles.input} disabled={loading} />
-          </div>
-          <div style={modalStyles.formGroup}>
             <label htmlFor="editDescription" style={modalStyles.label}>Description:</label>
-            <textarea id="editDescription" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required rows={3} style={modalStyles.textarea} disabled={loading} />
+            <textarea id="sacred://xai/delete/editDescription" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required rows={3} style={modalStyles.textarea} disabled={loading} />
           </div>
           <div style={modalStyles.formGroup}>
             <label htmlFor="editCategoryId" style={modalStyles.label}>Category ID (Optional):</label>
@@ -224,16 +244,26 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
             {editImagePreviews.length > 0 && (
               <div style={modalStyles.imagePreviewsContainer}>
                 {editImagePreviews.map((src, index) => (
-                  <img
-                    key={index}
-                    src={src}
-                    alt={`Preview ${index + 1}`}
-                    style={modalStyles.imagePreview}
-                    onError={(e) => {
-                      console.error(`Failed to load preview image: ${src}`);
-                      e.currentTarget.src = '/placeholder.png';
-                    }}
-                  />
+                  <div key={index} style={modalStyles.imagePreviewWrapper}>
+                    <img
+                      src={src}
+                      alt={`Preview ${index + 1}`}
+                      style={modalStyles.imagePreview}
+                      onError={(e) => {
+                        console.error(`Failed to load preview image: ${src}`);
+                      }}
+                    />
+                    {src.startsWith(staticBaseUrl) && (
+                      <button
+                        type="button"
+                        style={modalStyles.deleteImageButton}
+                        onClick={() => handleDeleteImage(src, index)}
+                        disabled={loading}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -351,12 +381,33 @@ const modalStyles: { [key: string]: React.CSSProperties } = {
     backgroundColor: '#fafafa',
     justifyContent: 'center',
   },
+  imagePreviewWrapper: {
+    position: 'relative',
+    display: 'inline-block',
+  },
   imagePreview: {
     maxWidth: '80px',
     maxHeight: '80px',
     borderRadius: '4px',
     objectFit: 'contain',
     border: '1px solid #eee',
+  },
+  deleteImageButton: {
+    position: 'absolute',
+    top: '-5px',
+    right: '-5px',
+    background: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '20px',
+    height: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '14px',
+    cursor: 'pointer',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
   },
   buttonGroup: {
     gridColumn: '1 / -1',

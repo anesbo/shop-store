@@ -1,0 +1,24 @@
+[33mcommit 9f20b7e79ba4dc9002897dc17541aa9f7678c978[m
+Author: anesbo <anesbo2005@gmail.com>
+Date:   Sun Jul 20 14:13:11 2025 +0200
+
+    Re-added all frontend files after Git cleanup issue
+
+frontEnd/.gitignore
+frontEnd/README.md
+frontEnd/eslint.config.mjs
+frontEnd/next.config.ts
+frontEnd/package-lock.json
+frontEnd/package.json
+frontEnd/src/app/admin/page.tsx
+frontEnd/src/app/api/auth/logout/route.ts
+frontEnd/src/app/api/auth/me/route.ts
+frontEnd/src/app/api/auth/route.ts
+frontEnd/src/app/components/EditProductModal.tsx
+frontEnd/src/app/functions.ts
+frontEnd/src/app/layout.tsx
+frontEnd/src/app/login/page.tsx
+frontEnd/src/app/page.tsx
+frontEnd/src/app/products/page.tsx
+frontEnd/src/app/single-product/[id]/page.tsx
+frontEnd/tsconfig.json
