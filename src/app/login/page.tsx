@@ -55,7 +55,7 @@ const LoginPage = () => {
 
       if (data.user && data.user.is_admin) {
         showTemporaryMessage('Login successful! Redirecting to admin dashboard...', 'success');
-        setTimeout(() => router.push('/admin'), 1000);
+        setTimeout(() => router.push('/admin/add-product'), 1000);
       } else {
         showTemporaryMessage('Access denied: Admin privileges required.', 'error');
       }

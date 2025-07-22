@@ -250,6 +250,8 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
                       src={src}
                       alt={`Preview ${index + 1}`}
                       style={modalStyles.imagePreview}
+                      width={300}
+                      height={200}
                     />
                     {src.startsWith(staticBaseUrl) && (
                       <button

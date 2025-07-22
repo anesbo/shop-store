@@ -342,6 +342,8 @@ export default function Home() {
                   src={`${staticBaseUrl}${product.images[0].image_url}`}
                   alt={`${product.name} image`}
                   style={styles.productImage}
+                  width={300}
+                  height={200}
                 />
               ) : (
                 <p><i>No image available</i></p>
